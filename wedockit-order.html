@@ -1,0 +1,739 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>WeDockit — Build Your Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,900;1,400&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0b030f;--lavender:#c4b0ff;--lavender-dim:rgba(196,176,255,0.1);
+  --pink:#f472b6;--pink-dim:rgba(244,114,182,0.1);
+  --orange:#f5a623;--green:#22c55e;
+  --text:#f0f0ff;--text-mid:#c0b8d8;--text-muted:#7070a0;
+  --border:rgba(196,176,255,0.1);--border-mid:rgba(196,176,255,0.22);
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+html,body{height:100%;overflow:hidden;}
+body{
+  background:linear-gradient(180deg,#e9c7ff 0%,#c49be8 4%,#8855cc 10%,#4a1a7a 18%,#2a0a4a 26%,#1a0530 36%,#0e0218 50%,#0b030f 70%,#0b030f 100%);
+  color:var(--text);font-family:'DM Sans',sans-serif;display:flex;flex-direction:column;height:100vh;overflow:hidden;
+}
+body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(160,80,255,0.05) 1px,transparent 1px),linear-gradient(90deg,rgba(160,80,255,0.05) 1px,transparent 1px);background-size:56px 56px;pointer-events:none;z-index:0;}
+
+/* STARS */
+.star{position:fixed;border-radius:50%;background:#fff;pointer-events:none;z-index:0;opacity:0;animation:starfade var(--dur) ease-in-out var(--delay) infinite;}
+@keyframes starfade{0%,100%{opacity:0;transform:scale(0.6);}50%{opacity:var(--mop);transform:scale(1);}}
+
+/* SUN */
+.sun-wrap{position:fixed;bottom:0;left:0;right:0;height:100vh;pointer-events:none;z-index:0;overflow:hidden;}
+.sun-circle{position:absolute;bottom:-120px;left:50%;transform:translateX(-50%);width:700px;height:700px;border-radius:50%;background:linear-gradient(180deg,rgba(245,208,32,0.14) 0%,rgba(245,166,35,0.1) 22%,rgba(232,89,60,0.07) 42%,transparent 65%);filter:blur(3px);}
+.sun-lines{position:absolute;bottom:-120px;left:50%;transform:translateX(-50%);width:700px;height:700px;border-radius:50%;overflow:hidden;}
+.sl{position:absolute;left:0;right:0;background:rgba(11,3,15,0.32);}
+.horizon{position:absolute;bottom:0;left:0;right:0;height:100px;background:linear-gradient(180deg,transparent,rgba(232,89,60,0.04) 40%,rgba(157,39,176,0.06));}
+
+/* NAV */
+nav{position:sticky;top:0;z-index:200;background:rgba(11,3,15,0.92);backdrop-filter:blur(20px);border-bottom:1px solid var(--border);padding:0 32px;height:62px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;}
+.nav-back{font-size:13px;color:var(--text-muted);text-decoration:none;display:flex;align-items:center;gap:6px;transition:color 0.2s;}
+.nav-back:hover{color:#fff;}
+.nav-logo{font-family:'Playfair Display',serif;font-size:22px;font-weight:700;color:#fff;text-decoration:none;}
+.nav-logo em{font-style:italic;font-weight:400;color:var(--lavender);}
+.nav-title{font-size:13px;font-weight:600;color:var(--lavender);letter-spacing:0.12em;text-transform:uppercase;}
+
+/* LAYOUT */
+.page-layout{display:flex;min-height:calc(100vh - 62px);position:relative;z-index:1;}
+.main-col{flex:1;padding:40px 48px 120px;max-width:calc(100vw - 320px);overflow-y:auto;}
+.cart-col{width:320px;flex-shrink:0;position:fixed;top:62px;right:0;height:calc(100vh - 62px);border-left:1px solid var(--border);background:#0d0414;display:flex;flex-direction:column;z-index:100;transition:transform 0.3s ease;box-shadow:-4px 0 24px rgba(0,0,0,0.4);}
+.cart-col.collapsed{transform:translateX(320px);}
+::-webkit-scrollbar{width:3px;}
+::-webkit-scrollbar-track{background:#0b030f;}
+::-webkit-scrollbar-thumb{background:rgba(196,176,255,0.2);border-radius:2px;}
+
+/* SECTION */
+.sec-eyebrow{display:flex;align-items:center;gap:10px;margin-bottom:14px;}
+.sec-line{width:24px;height:2px;background:var(--lavender);border-radius:1px;}
+.sec-label{font-size:11px;font-weight:600;color:var(--lavender);letter-spacing:0.2em;text-transform:uppercase;}
+.page-title{font-family:'Playfair Display',serif;font-size:clamp(32px,4vw,48px);font-weight:900;color:#fff;letter-spacing:-0.025em;margin-bottom:8px;line-height:1.05;}
+.page-title em{font-style:italic;font-weight:400;color:var(--lavender);}
+.page-sub{font-size:16px;color:rgba(255,255,255,0.6);line-height:1.7;font-weight:300;margin-bottom:28px;max-width:640px;}
+
+/* APPROVE BANNER */
+.approve-banner{background:rgba(34,197,94,0.07);border:1px solid rgba(34,197,94,0.2);border-radius:12px;padding:16px 20px;margin-bottom:28px;display:flex;align-items:center;gap:14px;}
+.approve-icon{font-size:24px;flex-shrink:0;}
+.approve-title{font-size:15px;font-weight:700;color:#86efac;margin-bottom:2px;}
+.approve-desc{font-size:13px;color:rgba(255,255,255,0.5);font-weight:300;}
+
+/* DOCK CONFIG — at top */
+.dock-config{background:rgba(255,255,255,0.03);border:1px solid var(--border-mid);border-radius:14px;padding:24px;margin-bottom:28px;position:relative;}
+.dock-config::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,#f5d020,#f5a623,#e8593c,#e8173a,#c2185b,#9c27b0);border-radius:14px 14px 0 0;}
+.dock-config-title{font-family:'Playfair Display',serif;font-size:22px;font-weight:700;color:#fff;margin-bottom:4px;}
+.dock-config-sub{font-size:13px;color:var(--text-muted);margin-bottom:20px;font-weight:300;}
+.form-label{font-size:11px;font-weight:600;color:var(--lavender);letter-spacing:0.16em;text-transform:uppercase;margin-bottom:7px;display:block;}
+.form-hint{font-size:12px;color:rgba(255,255,255,0.38);margin-bottom:8px;font-weight:300;}
+.form-input{width:100%;background:rgba(255,255,255,0.05);border:1px solid var(--border);border-radius:9px;padding:12px 16px;color:#fff;font-family:'DM Sans',sans-serif;font-size:14px;outline:none;transition:border-color 0.2s;margin-bottom:18px;}
+.form-input:focus{border-color:var(--border-mid);}
+.form-input::placeholder{color:rgba(255,255,255,0.2);}
+textarea.form-input{resize:vertical;min-height:78px;}
+
+/* BASE FEATURES */
+.base-card{background:rgba(34,197,94,0.06);border:1px solid rgba(34,197,94,0.2);border-radius:11px;padding:14px 18px;margin-bottom:20px;display:flex;align-items:flex-start;gap:12px;}
+.base-icon{font-size:20px;flex-shrink:0;margin-top:2px;}
+.base-title{font-size:12px;font-weight:600;color:#86efac;margin-bottom:6px;letter-spacing:0.04em;}
+.base-list{display:flex;flex-wrap:wrap;gap:6px;}
+.base-tag{background:rgba(34,197,94,0.1);border:1px solid rgba(34,197,94,0.2);color:#86efac;font-size:11px;font-weight:600;padding:3px 10px;border-radius:20px;}
+
+/* PRICE COUNTER */
+.price-counter{background:rgba(11,3,15,0.8);border:1px solid var(--border-mid);border-radius:12px;padding:14px 18px;margin-bottom:20px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:8px;z-index:50;backdrop-filter:blur(12px);}
+.counter-num{font-family:'Playfair Display',serif;font-size:34px;font-weight:700;color:var(--lavender);line-height:1;transition:color 0.3s;}
+.counter-num.t2{color:var(--pink);}
+.counter-num.t3{color:var(--orange);}
+.counter-num.t4{color:var(--green);}
+.counter-label{font-size:12px;color:var(--text-mid);}
+.counter-sub{font-size:10px;color:var(--text-muted);margin-top:1px;}
+.counter-price{font-family:'Playfair Display',serif;font-size:30px;font-weight:700;color:#fff;line-height:1;}
+.counter-tier{font-size:10px;color:var(--text-muted);text-align:right;margin-top:2px;}
+.btn-clear{background:rgba(196,176,255,0.07);border:1px solid var(--border);color:var(--text-muted);font-size:12px;padding:6px 14px;border-radius:7px;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all 0.15s;}
+.btn-clear:hover{background:rgba(196,176,255,0.14);color:#fff;}
+
+/* CATEGORIES */
+.cat-block{margin-bottom:10px;}
+.cat-header{display:flex;align-items:center;gap:12px;padding:13px 16px;background:rgba(255,255,255,0.03);border:1px solid var(--border);border-radius:10px;cursor:pointer;transition:all 0.15s;user-select:none;}
+.cat-header:hover{background:rgba(196,176,255,0.05);border-color:var(--border-mid);}
+.cat-header.open{border-color:var(--border-mid);background:rgba(196,176,255,0.05);border-radius:10px 10px 0 0;}
+.cat-emoji{width:34px;height:34px;border-radius:8px;background:rgba(196,176,255,0.08);display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0;}
+.cat-info{flex:1;}
+.cat-title{font-size:15px;font-weight:600;color:#fff;}
+.cat-sub{font-size:11px;color:var(--text-muted);margin-top:1px;}
+.cat-badge{background:var(--lavender-dim);border:1px solid var(--border-mid);color:var(--lavender);font-size:10px;font-weight:600;padding:3px 10px;border-radius:20px;}
+.cat-chev{font-size:14px;color:var(--text-muted);transition:transform 0.2s;flex-shrink:0;}
+.cat-header.open .cat-chev{transform:rotate(180deg);}
+.mod-grid{display:none;grid-template-columns:repeat(auto-fill,minmax(195px,1fr));gap:9px;padding:12px;background:rgba(196,176,255,0.02);border:1px solid var(--border-mid);border-top:none;border-radius:0 0 10px 10px;}
+.mod-grid.open{display:grid;}
+.mod-card{background:rgba(255,255,255,0.03);border:1px solid var(--border);border-radius:10px;padding:14px 13px;cursor:pointer;transition:all 0.15s;position:relative;}
+.mod-card:hover{border-color:var(--border-mid);background:rgba(255,255,255,0.05);transform:translateY(-1px);}
+.mod-card.selected{border-color:var(--pink);background:rgba(244,114,182,0.08);}
+.mod-check{position:absolute;top:8px;right:8px;width:17px;height:17px;background:var(--pink);border-radius:50%;display:none;align-items:center;justify-content:center;font-size:10px;color:#fff;font-weight:700;}
+.mod-card.selected .mod-check{display:flex;}
+.mod-icon{width:32px;height:32px;border-radius:8px;background:rgba(196,176,255,0.08);display:flex;align-items:center;justify-content:center;font-size:14px;margin-bottom:9px;}
+.mod-name{font-size:14px;font-weight:600;color:#fff;margin-bottom:4px;line-height:1.3;padding-right:22px;}
+.mod-desc{font-size:12px;color:var(--text-muted);line-height:1.5;margin-bottom:8px;}
+.mod-tag{display:inline-block;font-size:9px;font-weight:600;letter-spacing:0.07em;padding:2px 7px;border-radius:20px;}
+.tag-pl{background:rgba(59,130,246,0.12);color:#93c5fd;border:1px solid rgba(59,130,246,0.2);}
+.tag-pr{background:rgba(167,139,250,0.12);color:#c4b0ff;border:1px solid rgba(167,139,250,0.2);}
+.tag-fi{background:rgba(34,197,94,0.1);color:#86efac;border:1px solid rgba(34,197,94,0.2);}
+.tag-co{background:rgba(251,191,36,0.1);color:#fcd34d;border:1px solid rgba(251,191,36,0.2);}
+.tag-pe{background:rgba(244,114,182,0.1);color:#f9a8d4;border:1px solid rgba(244,114,182,0.2);}
+
+/* ADD TO CART BTN */
+.btn-add-cart{width:100%;background:linear-gradient(135deg,#f5a623,#e8593c,#e8173a,#c2185b);color:#fff;border:none;font-size:15px;font-weight:700;padding:14px;border-radius:9px;cursor:pointer;font-family:'DM Sans',sans-serif;letter-spacing:0.03em;box-shadow:0 0 24px rgba(232,89,60,0.3);margin-top:18px;transition:opacity 0.2s;}
+.btn-add-cart:hover{opacity:0.88;}
+
+/* CART */
+.cart-header{padding:18px 20px 14px;border-bottom:1px solid var(--border);flex-shrink:0;display:flex;align-items:flex-start;justify-content:space-between;gap:10px;}
+.cart-title{font-family:'Playfair Display',serif;font-size:19px;font-weight:700;color:#fff;margin-bottom:3px;}
+.cart-sub{font-size:11px;color:var(--text-muted);}
+.cart-collapse-btn{background:rgba(196,176,255,0.08);border:1px solid var(--border);color:var(--lavender);font-size:11px;font-weight:600;padding:5px 12px;border-radius:7px;cursor:pointer;font-family:'DM Sans',sans-serif;white-space:nowrap;flex-shrink:0;transition:all 0.15s;}
+.cart-collapse-btn:hover{background:rgba(196,176,255,0.15);color:#fff;}
+.cart-items{flex:1;overflow-y:auto;padding:14px 18px;}
+.cart-empty{text-align:center;padding:44px 16px;color:var(--text-muted);font-size:13px;font-style:italic;line-height:1.7;}
+.cart-empty-icon{font-size:32px;margin-bottom:10px;display:block;opacity:0.4;}
+.cart-item{background:rgba(255,255,255,0.03);border:1px solid var(--border);border-radius:10px;padding:13px;margin-bottom:9px;position:relative;}
+.cart-item-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:7px;}
+.cart-item-name{font-size:13px;font-weight:600;color:#fff;}
+.cart-item-price{font-family:'Playfair Display',serif;font-size:17px;font-weight:700;color:var(--lavender);}
+.cart-item-modules{font-size:11px;color:var(--text-muted);margin-bottom:4px;}
+.cart-item-vibe{font-size:11px;color:var(--text-muted);font-style:italic;margin-bottom:6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.cart-item-tags{display:flex;flex-wrap:wrap;gap:4px;}
+.cart-item-tag{font-size:9px;font-weight:600;padding:2px 7px;border-radius:20px;background:rgba(196,176,255,0.08);border:1px solid var(--border);color:var(--lavender);}
+.cart-remove{position:absolute;top:9px;right:9px;background:none;border:none;color:var(--text-muted);font-size:15px;cursor:pointer;transition:color 0.15s;padding:2px;}
+.cart-remove:hover{color:var(--pink);}
+.cart-footer{padding:14px 18px;border-top:1px solid var(--border);flex-shrink:0;background:rgba(11,3,15,0.5);}
+.cart-line{display:flex;justify-content:space-between;font-size:12px;color:var(--text-muted);margin-bottom:5px;}
+.cart-line.subtotal{color:var(--text-mid);}
+.cart-line.discount{color:#86efac;}
+.cart-line.rush-line{color:var(--orange);}
+.cart-line.total{font-size:16px;font-weight:700;color:#fff;border-top:1px solid var(--border);padding-top:9px;margin-top:5px;}
+.cart-line.total span:last-child{font-family:'Playfair Display',serif;font-size:20px;color:var(--lavender);}
+.rush-toggle{display:flex;align-items:center;justify-content:space-between;background:rgba(245,166,35,0.06);border:1px solid rgba(245,166,35,0.15);border-radius:9px;padding:10px 13px;margin-bottom:12px;cursor:pointer;transition:all 0.15s;}
+.rush-toggle:hover{background:rgba(245,166,35,0.1);}
+.rush-toggle-left{display:flex;align-items:center;gap:8px;font-size:12px;color:rgba(255,255,255,0.65);}
+.rush-switch{width:32px;height:17px;border-radius:9px;background:rgba(255,255,255,0.1);border:1px solid var(--border);position:relative;transition:all 0.2s;flex-shrink:0;}
+.rush-switch.on{background:var(--orange);border-color:var(--orange);}
+.rush-switch::after{content:'';position:absolute;width:11px;height:11px;border-radius:50%;background:#fff;top:2px;left:2px;transition:transform 0.2s;}
+.rush-switch.on::after{transform:translateX(15px);}
+.btn-place-order{width:100%;background:linear-gradient(135deg,#f5a623,#e8593c,#e8173a,#c2185b);color:#fff;border:none;font-size:14px;font-weight:700;padding:13px;border-radius:9px;cursor:pointer;font-family:'DM Sans',sans-serif;box-shadow:0 0 22px rgba(232,89,60,0.3);transition:opacity 0.2s;margin-top:8px;}
+.btn-place-order:hover{opacity:0.88;}
+.btn-place-order:disabled{opacity:0.4;cursor:not-allowed;box-shadow:none;}
+
+/* FLOATING CART */
+.cart-show-tab{display:none;position:fixed;top:50%;right:0;transform:translateY(-50%);z-index:101;background:#0d0414;border:1px solid var(--border-mid);border-right:none;color:var(--lavender);font-size:11px;font-weight:700;padding:13px 9px;border-radius:9px 0 0 9px;cursor:pointer;font-family:'DM Sans',sans-serif;writing-mode:vertical-rl;letter-spacing:0.1em;text-transform:uppercase;box-shadow:-4px 0 14px rgba(0,0,0,0.3);}
+.cart-fab{position:fixed;bottom:24px;right:24px;z-index:500;width:54px;height:54px;border-radius:50%;background:linear-gradient(135deg,#f5a623,#e8593c,#e8173a,#c2185b);border:none;cursor:pointer;display:none;align-items:center;justify-content:center;font-size:20px;box-shadow:0 4px 22px rgba(232,89,60,0.5);transition:transform 0.2s;color:#fff;}
+.cart-fab:hover{transform:scale(1.08);}
+.cart-fab-badge{position:absolute;top:-4px;right:-4px;width:18px;height:18px;border-radius:50%;background:var(--lavender);color:var(--bg);font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;}
+
+/* QUESTIONNAIRE */
+.questionnaire{margin-top:44px;}
+.q-card{background:rgba(11,3,15,0.78);border:1px solid var(--border-mid);border-radius:18px;padding:36px;position:relative;overflow:hidden;}
+.q-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,#f5d020,#f5a623,#e8593c,#e8173a,#c2185b,#9c27b0,var(--lavender));}
+.q-title{font-family:'Playfair Display',serif;font-size:28px;font-weight:900;color:#fff;margin-bottom:6px;letter-spacing:-0.02em;}
+.q-title em{font-style:italic;font-weight:400;color:var(--lavender);}
+.q-sub{font-size:14px;color:rgba(255,255,255,0.5);margin-bottom:24px;font-weight:300;line-height:1.6;}
+.progress-dots{display:flex;gap:5px;margin-bottom:24px;}
+.pdot{flex:1;height:3px;background:rgba(196,176,255,0.1);border-radius:2px;transition:background 0.3s;}
+.pdot.done{background:var(--lavender);}
+.pdot.active{background:var(--pink);}
+.form-step{display:none;}
+.form-step.active{display:block;}
+.tab-opts{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;}
+.tab-opt{background:rgba(255,255,255,0.04);border:1px solid var(--border);border-radius:7px;padding:9px 16px;font-size:13px;color:rgba(255,255,255,0.5);cursor:pointer;transition:all 0.15s;font-family:'DM Sans',sans-serif;}
+.tab-opt:hover{border-color:var(--border-mid);color:#fff;}
+.tab-opt.selected{background:var(--lavender-dim);border-color:var(--lavender);color:var(--lavender);}
+.form-nav{display:flex;justify-content:space-between;align-items:center;margin-top:10px;}
+.btn-back{background:none;border:none;color:rgba(255,255,255,0.35);font-size:13px;cursor:pointer;font-family:'DM Sans',sans-serif;transition:color 0.2s;padding:0;}
+.btn-back:hover{color:#fff;}
+.btn-next{background:linear-gradient(135deg,#f5a623,#e8593c,#e8173a,#c2185b);color:#fff;border:none;font-size:13px;font-weight:600;padding:11px 24px;border-radius:8px;cursor:pointer;font-family:'DM Sans',sans-serif;box-shadow:0 0 16px rgba(232,89,60,0.3);}
+.btn-next:hover{opacity:0.88;}
+.step-count{font-size:11px;color:rgba(255,255,255,0.3);}
+.cart-summary-form{background:rgba(196,176,255,0.06);border:1px solid var(--border-mid);border-radius:9px;padding:13px 15px;margin-bottom:18px;}
+.csif-title{font-size:11px;font-weight:600;color:var(--lavender);letter-spacing:0.12em;text-transform:uppercase;margin-bottom:9px;}
+.csif-item{font-size:12px;color:var(--text-mid);margin-bottom:4px;display:flex;justify-content:space-between;}
+.csif-total{font-size:14px;font-weight:700;color:#fff;border-top:1px solid var(--border);padding-top:7px;margin-top:5px;display:flex;justify-content:space-between;}
+.form-success{display:none;text-align:center;padding:20px 0;}
+.success-icon{font-size:48px;margin-bottom:16px;}
+.success-title{font-family:'Playfair Display',serif;font-size:26px;font-weight:700;color:#fff;margin-bottom:10px;}
+.success-sub{font-size:14px;color:rgba(255,255,255,0.5);line-height:1.75;max-width:380px;margin:0 auto 20px;font-weight:300;}
+</style>
+</head>
+<body>
+
+<div id="stars-wrap"></div>
+<div class="sun-wrap">
+  <div class="sun-circle"></div>
+  <div class="sun-lines">
+    <div class="sl" style="height:5px;bottom:280px;"></div>
+    <div class="sl" style="height:6px;bottom:250px;"></div>
+    <div class="sl" style="height:7px;bottom:218px;"></div>
+    <div class="sl" style="height:8px;bottom:184px;"></div>
+    <div class="sl" style="height:10px;bottom:148px;"></div>
+    <div class="sl" style="height:12px;bottom:110px;"></div>
+    <div class="sl" style="height:14px;bottom:70px;"></div>
+    <div class="sl" style="height:16px;bottom:28px;"></div>
+  </div>
+  <div class="horizon"></div>
+</div>
+
+<!-- FLOATING CART BUTTON -->
+<button class="cart-fab" id="cart-fab" onclick="toggleCart()">
+  🛒<span class="cart-fab-badge" id="fab-badge">0</span>
+</button>
+
+<!-- CART SHOW TAB -->
+<button class="cart-show-tab" id="cart-show-tab" onclick="toggleCart()">&#9664; Cart</button>
+
+<!-- NAV -->
+<nav>
+  <a href="index.html" class="nav-back">&#8592; Back to site</a>
+  <div class="nav-title">Build Your Dock</div>
+  <a href="index.html" class="nav-logo">We<em>Dockit</em></a>
+</nav>
+
+<div class="page-layout">
+
+  <!-- MAIN COLUMN -->
+  <div class="main-col">
+
+    <!-- STEP 1 EYEBROW -->
+    <div class="sec-eyebrow"><div class="sec-line"></div><div class="sec-label">Step 1 — Configure your dashboard</div></div>
+    <h1 class="page-title">Build your<br><em>Personalized Dashboard.</em></h1>
+    <p class="page-sub">Name your dashboard and describe the vibe first. Then select your modules. Add to cart when ready — repeat for additional dashboards. Fill out the questionnaire when you are done.</p>
+
+    <!-- APPROVE BANNER -->
+    <div class="approve-banner">
+      <div class="approve-icon">&#128274;</div>
+      <div>
+        <div class="approve-title">You will not be charged until you approve your preview.</div>
+        <div class="approve-desc">We build your Dock and send 3 homepage images first. You approve the look, then we send your payment link and live link together. Zero risk.</div>
+      </div>
+    </div>
+
+    <!-- DOCK CONFIG — at top before modules -->
+    <div class="dock-config">
+      <div class="dock-config-title">Configure This Dashboard</div>
+      <div class="dock-config-sub">Name your dashboard and describe the vibe first, then select your modules below. Add to cart when done — then repeat for additional Docks.</div>
+      <label class="form-label">Dock name <span style="color:var(--text-muted);font-weight:300;font-size:10px;">(optional)</span></label>
+      <div class="form-hint">e.g. "My Work Dashboard", "Content Hub", "Morning Routine"</div>
+      <input class="form-input" type="text" id="dock-name" placeholder="e.g. My Main Dock">
+      <label class="form-label">Vibe and theme</label>
+      <div class="form-hint">Dark or light? Bold or minimal? Any specific theme — NBA team, anime, feminine, tactical? Describe it however feels natural.</div>
+      <textarea class="form-input" id="dock-vibe" placeholder="e.g. Dark and minimal with clean fonts. Or: Golden State Warriors. Or: soft feminine blush tones..."></textarea>
+    </div>
+
+
+    <!-- QUESTIONNAIRE -->
+    <div class="questionnaire">
+      <div class="sec-eyebrow" style="margin-top:52px;"><div class="sec-line"></div><div class="sec-label">Step 3 — Your Details</div></div>
+      <div class="q-card">
+        <div class="q-title">Almost <em>there.</em></div>
+        <p class="q-sub">Add your Docks to the cart above, then answer these 8 quick questions. We will take care of everything else.</p>
+        <div class="progress-dots" id="progress-dots">
+          <div class="pdot active" id="dot-0"></div>
+          <div class="pdot" id="dot-1"></div>
+          <div class="pdot" id="dot-2"></div>
+          <div class="pdot" id="dot-3"></div>
+          <div class="pdot" id="dot-4"></div>
+          <div class="pdot" id="dot-5"></div>
+          <div class="pdot" id="dot-6"></div>
+          <div class="pdot" id="dot-7"></div>
+        </div>
+
+        <div class="form-step active" id="step-0">
+          <label class="form-label">Your name</label>
+          <div class="form-hint">Optional — just for personalizing your Dock.</div>
+          <input class="form-input" type="text" id="q-name" placeholder="e.g. Jordan, Alex, or leave blank">
+          <div class="form-nav"><span class="step-count">1 of 8</span><button class="btn-next" onclick="nextStep(0)">Next &rarr;</button></div>
+        </div>
+
+        <div class="form-step" id="step-1">
+          <label class="form-label">What are your business(es) or idea(s)?</label>
+          <div class="form-hint">Tell us about each business or project — especially if ordering multiple Docks for different things.</div>
+          <textarea class="form-input" id="q-business" placeholder="e.g. I run a fitness coaching business on TikTok and also have a digital products store..."></textarea>
+          <div class="form-nav"><button class="btn-back" onclick="prevStep(1)">&larr;</button><span class="step-count">2 of 8</span><button class="btn-next" onclick="nextStep(1)">Next &rarr;</button></div>
+        </div>
+
+        <div class="form-step" id="step-2">
+          <label class="form-label">What platforms or websites do you use every day?</label>
+          <div class="form-hint">We will add quick links to these inside your Dock.</div>
+          <textarea class="form-input" id="q-links" placeholder="e.g. TikTok, Instagram, Canva, Notion, ChatGPT, Gmail..."></textarea>
+          <div class="form-nav"><button class="btn-back" onclick="prevStep(2)">&larr;</button><span class="step-count">3 of 8</span><button class="btn-next" onclick="nextStep(2)">Next &rarr;</button></div>
+        </div>
+
+        <div class="form-step" id="step-3">
+          <label class="form-label">How far out do you want your Dock built for?</label>
+          <div class="tab-opts">
+            <div class="tab-opt" onclick="selectOpt(this,'timeframe')">3 months</div>
+            <div class="tab-opt" onclick="selectOpt(this,'timeframe')">6 months</div>
+            <div class="tab-opt" onclick="selectOpt(this,'timeframe')">1 year</div>
+            <div class="tab-opt" onclick="selectOpt(this,'timeframe')">Custom</div>
+          </div>
+          <input class="form-input" id="q-timeframe" placeholder="Or describe your own timeframe..." style="margin-top:0;">
+          <div class="form-nav"><button class="btn-back" onclick="prevStep(3)">&larr;</button><span class="step-count">4 of 8</span><button class="btn-next" onclick="nextStep(3)">Next &rarr;</button></div>
+        </div>
+
+        <div class="form-step" id="step-4">
+          <label class="form-label">Where would you like your tabs?</label>
+          <div class="tab-opts" style="flex-direction:column;gap:10px;">
+            <div class="tab-opt" style="display:flex;align-items:center;gap:12px;padding:13px 16px;" onclick="selectOpt(this,'tablayout')">
+              <span style="font-size:18px;">&#9776;</span>
+              <div><div style="font-weight:600;color:#fff;font-size:14px;">Top navigation</div><div style="font-size:11px;color:var(--text-muted);margin-top:2px;">Tabs run across the top of the screen</div></div>
+            </div>
+            <div class="tab-opt" style="display:flex;align-items:center;gap:12px;padding:13px 16px;" onclick="selectOpt(this,'tablayout')">
+              <span style="font-size:18px;">&#9664;</span>
+              <div><div style="font-weight:600;color:#fff;font-size:14px;">Left sidebar</div><div style="font-size:11px;color:var(--text-muted);margin-top:2px;">Tabs stack vertically on the left side</div></div>
+            </div>
+            <div class="tab-opt" style="display:flex;align-items:center;gap:12px;padding:13px 16px;" onclick="selectOpt(this,'tablayout')">
+              <span style="font-size:18px;">&#9654;</span>
+              <div><div style="font-weight:600;color:#fff;font-size:14px;">Right sidebar</div><div style="font-size:11px;color:var(--text-muted);margin-top:2px;">Tabs stack vertically on the right side</div></div>
+            </div>
+          </div>
+          <input class="form-input" id="q-tablayout" placeholder="Or describe your preference..." style="margin-top:12px;">
+          <div class="form-nav"><button class="btn-back" onclick="prevStep(4)">&larr;</button><span class="step-count">5 of 8</span><button class="btn-next" onclick="nextStep(4)">Next &rarr;</button></div>
+        </div>
+
+        <div class="form-step" id="step-5">
+          <label class="form-label">Social handles or website to link inside your Dock?</label>
+          <div class="form-hint">Optional — we will embed these directly.</div>
+          <textarea class="form-input" id="q-socials" placeholder="e.g. @yourhandle on TikTok, yourwebsite.com..."></textarea>
+          <label class="form-label" style="margin-top:4px;">Anything else we should know?</label>
+          <textarea class="form-input" id="q-extra" placeholder="Any special requests, extra details, or questions..." style="min-height:64px;"></textarea>
+          <div class="form-nav"><button class="btn-back" onclick="prevStep(5)">&larr;</button><span class="step-count">6 of 8</span><button class="btn-next" onclick="nextStep(5)">Next &rarr;</button></div>
+        </div>
+
+        <div class="form-step" id="step-6">
+          <label class="form-label">Your cart summary</label>
+          <div class="cart-summary-form" id="cart-summary-form"></div>
+          <div class="form-nav"><button class="btn-back" onclick="prevStep(6)">&larr;</button><span class="step-count">7 of 8</span><button class="btn-next" onclick="nextStep(6)">Next &rarr;</button></div>
+        </div>
+
+        <div class="form-step" id="step-7">
+          <label class="form-label">Your email address</label>
+          <div class="form-hint">We will send your preview images here. We do not spam.</div>
+          <input class="form-input" type="email" id="q-email" placeholder="you@example.com">
+          <div style="background:rgba(34,197,94,0.07);border:1px solid rgba(34,197,94,0.2);border-radius:9px;padding:13px 16px;margin-bottom:16px;font-size:13px;color:rgba(255,255,255,0.55);line-height:1.65;font-weight:300;">
+            &#128274; <strong style="color:#86efac;">You will not be charged until you approve your preview.</strong><br>
+            We build your Dock, send 3 homepage images, you approve, then we send your payment link and live link together.
+          </div>
+          <div class="form-nav"><button class="btn-back" onclick="prevStep(7)">&larr;</button><span class="step-count">8 of 8</span><button class="btn-next" onclick="submitForm()">Place Order &rarr;</button></div>
+        </div>
+
+        <div class="form-success" id="form-success">
+          <div class="success-icon">&#10022;</div>
+          <div class="success-title">You are in. We have got you.</div>
+          <p class="success-sub">Your order has been received. We will send 3 homepage preview images to your email. Once you approve, we build your Dock and send your payment link and live link together.</p>
+          <a href="index.html" style="display:inline-block;background:rgba(196,176,255,0.08);border:1px solid var(--border-mid);color:var(--lavender);font-size:13px;font-weight:600;padding:10px 22px;border-radius:7px;text-decoration:none;">Back to wedockit.com</a>
+        </div>
+      </div>
+    </div>
+    <!-- STEP 2 EYEBROW -->
+    <div class="sec-eyebrow" style="margin-top:32px;"><div class="sec-line"></div><div class="sec-label">Step 2 — Select Modules</div></div>
+    <p style="font-size:14px;color:rgba(255,255,255,0.5);margin-bottom:20px;font-weight:300;line-height:1.6;">Browse and select your modules below. Your selections carry into the cart automatically.</p>
+
+    <!-- BASE FEATURES -->
+    <div class="base-card">
+      <div class="base-icon">&#9989;</div>
+      <div>
+        <div class="base-title">Included free in every Dock</div>
+        <div class="base-list">
+          <span class="base-tag">Interactive checkboxes</span>
+          <span class="base-tag">+New task button</span>
+          <span class="base-tag">Interactive calendar</span>
+          <span class="base-tag">Greeting banner</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- PRICE COUNTER -->
+    <div class="price-counter">
+      <div style="display:flex;align-items:center;gap:12px;">
+        <div class="counter-num" id="mod-count">0</div>
+        <div><div class="counter-label" id="mod-label">modules selected</div><div class="counter-sub" id="mod-sub">Select modules below</div></div>
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:3px;">
+        <div class="counter-price" id="mod-price">$15</div>
+        <div class="counter-tier" id="mod-tier">Up to 10 modules</div>
+      </div>
+      <button class="btn-clear" onclick="clearMods()">Clear</button>
+    </div>
+
+    <!-- PLANNING -->
+    <div class="cat-block"><div class="cat-header" onclick="toggleCat(this)"><div class="cat-emoji">&#127919;</div><div class="cat-info"><div class="cat-title">Planning &amp; Goals</div><div class="cat-sub">Sprint planners, schedules, vision tools</div></div><span class="cat-badge">8 modules</span><span class="cat-chev">&#8964;</span></div>
+    <div class="mod-grid">
+      <div class="mod-card" onclick="toggleMod(this,'90 Day Sprint Planner')"><div class="mod-check">&#10003;</div><div class="mod-icon">&#128640;</div><div class="mod-name">90 Day Sprint Planner</div><div class="mod-desc">Focused 90-day goal cycles</div><span class="mod-tag tag-pl">Planning</span></div>
+      <div class="mod-card" onclick="toggleMod(this,'Weekly Review')"><div class="mod-check">&#10003;</div><div class="mod-icon">&#128202;</div><div class="mod-name">Weekly Review</div><div class="mod-desc">Structured end of week reflection</div><span class="mod-tag tag-pl">Planning</span></div>
+      <div class="mod-card" onclick="toggleMod(this,'Daily Affirmations')"><div class="mod-check">&#10003;</div><div class="mod-icon">&#11088;</div><div class="mod-name">Daily Affirmations</div><div class="mod-desc">Personalized affirmations daily</div><span class="mod-tag tag-pl">Planning</span></div>
+      <div class="mod-card" onclick="toggleMod(this,'Posting Schedule')"><div class="mod-check">&#10003;</div><div class="mod-icon">&#128197;</div><div class="mod-name">Posting Schedule</div><div class="mod-desc">Plan content by platform and date</div><span class="mod-tag tag-pl">Planning</span></div>
+      <div class="mod-card" onclick="toggleMod(this,'Reading List')"><div class="mod-check">&#10003;</div><div class="mod-icon">&#128218;</div><div class="mod-name">Reading List</div><div class="mod-desc">Track books and resources</div><span class="mod-tag tag-pl">Planning</span></div>
+      <div class="mod-card" onclick="toggleMod(this,'Learning Tracker')"><div class="mod-check">&#10003;</div><div class="mod-icon">&#127979;</div><div class="mod-name">Learning Tracker</div><div class="mod-desc">Courses and skills in progress</div><span class="mod-tag tag-pl">Planning</span></div>
+      <div class="mod-card" onclick="toggleMod(this,'Vision Board')"><div class="mod-check">&#10003;</div><div class="mod-icon">&#128247;</div><div class="mod-name">Vision Board</div><div class="mod-desc">Image links and goals visual grid</div><span class="mod-tag tag-pl">Planning</span></div>
+      <div class="mod-card" onclick="toggleMod(this,'Countdown to Launch')"><div class="mod-check">&#10003;</div><div class="mod-icon">&#9203;</div><div class="mod-name">Countdown to Launch</div><div class="mod-desc">Live countdown to your deadline</div><span class="mod-tag tag-pl">Planning</span></div>
+    </div></div>
+
+    <!-- TASKS -->
+    <div class="cat-block"><div class="cat-header" onclick="toggleCat(this)"><div class="cat-emoji">&#9889;</div><div class="cat-info"><div class="cat-title">Tasks &amp; Productivity</div><div class="cat-sub">Timers, focus tools, habit builders</div></div><span class="cat-badge">9 modules</span><span class="cat-chev">&#8964;</span></div>
+    <div class="mod-grid">
+      <div class="mod-card" onclick="toggleMod(this,'Pomodoro Timer')"><div class="mod-check">&#10003;</div><div class="mod-icon">&#127813;</div><div class="mod-name">Pomodoro Timer</div><div class="mod-desc">25 min focus / 5 min break</div><span class="mod-tag tag-pr">Productivity</span></div>
+      <div class="mod-card" onclick="toggleMod(this,'Countdown Timer')"><div class="mod-check">&#10003;</div><div class="mod-icon">&#9201;</div><div class="mod-name">Countdown Timer</div><div class="mod-desc">Set a time and count down live</div><span class="mod-tag tag-pr">Productivity</span></div>
+      <div class="mod-card" onclick="toggleMod(this,'Stopwatch')"><div class="mod-check">&#10003;</div><div class="mod-icon">&#128336;</div><div class="mod-name">Stopwatch</div><div class="mod-desc">Start, stop, and lap timer</div><span class="mod-tag tag-pr">Productivity</span></div>
+      <div class="mod-card" onclick="toggleMod(this,'Focus Mode')"><div class="mod-check">&#10003;</div><div class="mod-icon">&#127993;</div><div class="mod-name">Focus Mode</div><div class="mod-desc">One click hides everything else</div><span class="mod-tag tag-pr">Productivity</span></div>
+      <div class="mod-card" onclick="toggleMod(this,'Priority Matrix')"><div class="mod-check">&#10003;</div><div class="mod-icon">&#128268;</div><div class="mod-name">Priority Matrix</div><div class="mod-desc">Urgent and important quadrants</div><span class="mod-tag tag-pr">Productivity</span></div>
+      <div class="mod-card" onclick="toggleMod(this,'Live Clock')"><div class="mod-check">&#10003;</div><div class="mod-icon">&#128336;</div><div class="mod-name">Live Clock</div><div class="mod-desc">Real time clock always visible</div><span class="mod-tag tag-pr">Productivity</span></div>
+      <div class="mod-card" onclick="toggleMod(this,'Live Date Display')"><div class="mod-check">&#10003;</div><div class="mod-icon">&#128198;</div><div class="mod-name">Live Date Display</div><div class="mod-desc">Always shows today's date</div><span class="mod-tag tag-pr">Productivity</span></div>
+      <div class="mod-card" onclick="toggleMod(this,'Habit Tracker')"><div class="mod-check">&#10003;</div><div class="mod-icon">&#128293;</div><div class="mod-name">Habit Tracker</div><div class="mod-desc">Daily streaks and streak count</div><span class="mod-tag tag-pr">Productivity</span></div>
+      <div class="mod-card" onclick="toggleMod(this,'Daily Reset')"><div class="mod-check">&#10003;</div><div class="mod-icon">&#128260;</div><div class="mod-name">Daily Reset</div><div class="mod-desc">Tasks auto-uncheck at midnight</div><span class="mod-tag tag-pr">Productivity</span></div>
+    </div></div>
+
+    <!-- FINANCE -->
+    <div class="cat-block"><div class="cat-header" onclick="toggleCat(this)"><div class="cat-emoji">&#128176;</div><div class="cat-info"><div class="cat-title">Finance &amp; Business</div><div class="cat-sub">Income logs, deal trackers, client management</div></div><span class="cat-badge">10 modules</span><span class="cat-chev">&#8964;</span></div>
+    <div class="mod-grid">
+      <div class="mod-card" onclick="toggleMod(this,'Income Log')"><div class="mod-check">&#10003;</div><div class="mod-icon">&#128200;</div><div class="mod-name">Income Log</div><div class="mod-desc">Add sales, auto totals revenue</div><span class="mod-tag tag-fi">Finance</span></div>
+      <div class="mod-card" onclick="toggleMod(this,'Expense Tracker')"><div class="mod-check">&#10003;</div><div class="mod-icon">&#128201;</div><div class="mod-name">Expense Tracker</div><div class="mod-desc">Log expenses with running total</div><span class="mod-tag tag-fi">Finance</span></div>
+      <div class="mod-card" onclick="toggleMod(this,'Goal Progress Bars')"><div class="mod-check">&#10003;</div><div class="mod-icon">&#128251;</div><div class="mod-name">Goal Progress Bars</div><div class="mod-desc">Visual bars that fill as you grow</div><span class="mod-tag tag-fi">Finance</span></div>
+      <div class="mod-card" onclick="toggleMod(this,'Revenue Calculator')"><div class="mod-check">&#10003;</div><div class="mod-icon">&#128290;</div><div class="mod-name">Revenue Calculator</div><div class="mod-desc">Orders times price equals total</div><span class="mod-tag tag-fi">Finance</span></div>
+      <div class="mod-card" onclick="toggleMod(this,'Client Tracker')"><div class="mod-check">&#10003;</div><div class="mod-icon">&#128101;</div><div class="mod-name">Client Tracker</div><div class="mod-desc">Name, status, payment, notes</div><span class="mod-tag tag-fi">Business</span></div>
+      <div class="mod-card" onclick="toggleMod(this,'Lead Tracker')"><div class="mod-check">&#10003;</div><div class="mod-icon">&#128270;</div><div class="mod-name">Lead Tracker</div><div class="mod-desc">Track potential customers</div><span class="mod-tag tag-fi">Business</span></div>
+      <div class="mod-card" onclick="toggleMod(this,'Invoice Tracker')"><div class="mod-check">&#10003;</div><div class="mod-icon">&#128196;</div><div class="mod-name">Invoice Tracker</div><div class="mod-desc">Who owes you and follow up</div><span class="mod-tag tag-fi">Business</span></div>
+      <div class="mod-card" onclick="toggleMod(this,'Referral Tracker')"><div class="mod-check">&#10003;</div><div class="mod-icon">&#128279;</div><div class="mod-name">Referral Tracker</div><div class="mod-desc">Who referred who and status</div><span class="mod-tag tag-fi">Business</span></div>
+      <div class="mod-card" onclick="toggleMod(this,'Brand Deal Tracker')"><div class="mod-check">&#10003;</div><div class="mod-icon">&#129309;</div><div class="mod-name">Brand Deal Tracker</div><div class="mod-desc">Outreach to closed pipeline</div><span class="mod-tag tag-fi">Business</span></div>
+      <div class="mod-card" onclick="toggleMod(this,'Collaboration Tracker')"><div class="mod-check">&#10003;</div><div class="mod-icon">&#127760;</div><div class="mod-name">Collaboration Tracker</div><div class="mod-desc">Outreach status for collabs</div><span class="mod-tag tag-fi">Business</span></div>
+    </div></div>
+
+    <!-- CONTENT -->
+    <div class="cat-block"><div class="cat-header" onclick="toggleCat(this)"><div class="cat-emoji">&#9999;&#65039;</div><div class="cat-info"><div class="cat-title">Content &amp; Strategy</div><div class="cat-sub">Scripts, libraries, hashtags, guides</div></div><span class="cat-badge">12 modules</span><span class="cat-chev">&#8964;</span></div>
+    <div class="mod-grid">
+      <div class="mod-card" onclick="toggleMod(this,'Notes Pad')"><div class="mod-check">&#10003;</div><div class="mod-icon">&#128203;</div><div class="mod-name">Notes Pad</div><div class="mod-desc">Freeform writing, auto saves</div><span class="mod-tag tag-co">Content</span></div>
+      <div class="mod-card" onclick="toggleMod(this,'Caption Library')"><div class="mod-check">&#10003;</div><div class="mod-icon">&#128196;</div><div class="mod-name">Caption Library</div><div class="mod-desc">Save and copy best captions</div><span class="mod-tag tag-co">Content</span></div>
+      <div class="mod-card" onclick="toggleMod(this,'Content Ideas Bank')"><div class="mod-check">&#10003;</div><div class="mod-icon">&#128161;</div><div class="mod-name">Content Ideas Bank</div><div class="mod-desc">Dump ideas before they disappear</div><span class="mod-tag tag-co">Content</span></div>
+      <div class="mod-card" onclick="toggleMod(this,'Quick Links')"><div class="mod-check">&#10003;</div><div class="mod-icon">&#128279;</div><div class="mod-name">Quick Links</div><div class="mod-desc">Daily platforms one click away</div><span class="mod-tag tag-co">Content</span></div>
+      <div class="mod-card" onclick="toggleMod(this,'Scripts')"><div class="mod-check">&#10003;</div><div class="mod-icon">&#127908;</div><div class="mod-name">Scripts</div><div class="mod-desc">TikTok hooks, threads, posts</div><span class="mod-tag tag-co">Content</span></div>
+      <div class="mod-card" onclick="toggleMod(this,'Video Ideas')"><div class="mod-check">&#10003;</div><div class="mod-icon">&#127916;</div><div class="mod-name">Video Ideas</div><div class="mod-desc">Personalized ideas for your niche</div><span class="mod-tag tag-co">Content</span></div>
+      <div class="mod-card" onclick="toggleMod(this,'Hashtags')"><div class="mod-check">&#10003;</div><div class="mod-icon">&#35;&#65039;</div><div class="mod-name">Hashtags</div><div class="mod-desc">Curated sets by category</div><span class="mod-tag tag-co">Content</span></div>
+      <div class="mod-card" onclick="toggleMod(this,'Testimonial Bank')"><div class="mod-check">&#10003;</div><div class="mod-icon">&#11088;</div><div class="mod-name">Testimonial Bank</div><div class="mod-desc">Store reviews as they come in</div><span class="mod-tag tag-co">Content</span></div>
+      <div class="mod-card" onclick="toggleMod(this,'Quick Tips')"><div class="mod-check">&#10003;</div><div class="mod-icon">&#128161;</div><div class="mod-name">Quick Tips</div><div class="mod-desc">Helpful tips for your business</div><span class="mod-tag tag-co">Strategy</span></div>
+      <div class="mod-card" onclick="toggleMod(this,'How To Section')"><div class="mod-check">&#10003;</div><div class="mod-icon">&#128205;</div><div class="mod-name">How To Section</div><div class="mod-desc">Step by step guides for your niche</div><span class="mod-tag tag-co">Strategy</span></div>
+      <div class="mod-card" onclick="toggleMod(this,'Best Niches')"><div class="mod-check">&#10003;</div><div class="mod-icon">&#127981;</div><div class="mod-name">Best Niches</div><div class="mod-desc">Top opportunities for your type</div><span class="mod-tag tag-co">Strategy</span></div>
+      <div class="mod-card" onclick="toggleMod(this,'Keyboard Shortcuts')"><div class="mod-check">&#10003;</div><div class="mod-icon">&#9000;&#65039;</div><div class="mod-name">Keyboard Shortcuts</div><div class="mod-desc">Cheat sheet for your tools</div><span class="mod-tag tag-co">Strategy</span></div>
+    </div></div>
+
+    <!-- PERSONAL -->
+    <div class="cat-block"><div class="cat-header" onclick="toggleCat(this)"><div class="cat-emoji">&#128149;</div><div class="cat-info"><div class="cat-title">Journaling &amp; Personal</div><div class="cat-sub">Journals, mood tracking, personal widgets</div></div><span class="cat-badge">8 modules</span><span class="cat-chev">&#8964;</span></div>
+    <div class="mod-grid">
+      <div class="mod-card" onclick="toggleMod(this,'Daily Journal')"><div class="mod-check">&#10003;</div><div class="mod-icon">&#128221;</div><div class="mod-name">Daily Journal</div><div class="mod-desc">One prompt per day to reflect</div><span class="mod-tag tag-pe">Personal</span></div>
+      <div class="mod-card" onclick="toggleMod(this,'Gratitude Log')"><div class="mod-check">&#10003;</div><div class="mod-icon">&#128149;</div><div class="mod-name">Gratitude Log</div><div class="mod-desc">3 things to be grateful for daily</div><span class="mod-tag tag-pe">Personal</span></div>
+      <div class="mod-card" onclick="toggleMod(this,'Mood Tracker')"><div class="mod-check">&#10003;</div><div class="mod-icon">&#128522;</div><div class="mod-name">Mood Tracker</div><div class="mod-desc">Log how you feel each day</div><span class="mod-tag tag-pe">Personal</span></div>
+      <div class="mod-card" onclick="toggleMod(this,'Calculator')"><div class="mod-check">&#10003;</div><div class="mod-icon">&#129518;</div><div class="mod-name">Calculator</div><div class="mod-desc">Fully functional built right in</div><span class="mod-tag tag-pe">Personal</span></div>
+      <div class="mod-card" onclick="toggleMod(this,'Currency Converter')"><div class="mod-check">&#10003;</div><div class="mod-icon">&#128177;</div><div class="mod-name">Currency Converter</div><div class="mod-desc">Quick currency conversion</div><span class="mod-tag tag-pe">Personal</span></div>
+      <div class="mod-card" onclick="toggleMod(this,'Quote of the Day')"><div class="mod-check">&#10003;</div><div class="mod-icon">&#128172;</div><div class="mod-name">Quote of the Day</div><div class="mod-desc">Rotating motivational quotes</div><span class="mod-tag tag-pe">Personal</span></div>
+      <div class="mod-card" onclick="toggleMod(this,'Greeting Banner')"><div class="mod-check">&#10003;</div><div class="mod-icon">&#9728;&#65039;</div><div class="mod-name">Greeting Banner</div><div class="mod-desc">Good morning/afternoon by time</div><span class="mod-tag tag-pe">Personal</span></div>
+      <div class="mod-card" onclick="toggleMod(this,'Meeting Notes')"><div class="mod-check">&#10003;</div><div class="mod-icon">&#128221;</div><div class="mod-name">Meeting Notes</div><div class="mod-desc">Jot notes from calls and meetings</div><span class="mod-tag tag-pe">Personal</span></div>
+    </div></div>
+
+    <!-- ADD TO CART BUTTON -->
+    <button class="btn-add-cart" onclick="addToCart()">Add to Cart &rarr;</button>
+
+
+
+  </div><!-- end main col -->
+
+  <!-- CART SIDEBAR -->
+  <div class="cart-col" id="cart-col">
+    <div class="cart-header">
+      <div><div class="cart-title">Your Cart</div><div class="cart-sub" id="cart-sub">No Docks added yet</div></div>
+      <button class="cart-collapse-btn" id="collapse-btn" onclick="toggleCart()">&#8594; Hide</button>
+    </div>
+    <div class="cart-items" id="cart-items">
+      <div class="cart-empty" id="cart-empty">
+        <span class="cart-empty-icon">&#128722;</span>
+        Configure your Dock above, select modules, then click Add to Cart.
+      </div>
+    </div>
+    <div class="cart-footer">
+      <div class="rush-toggle" onclick="toggleRush()">
+        <div class="rush-toggle-left"><span style="font-size:14px;">&#9889;</span> Rush delivery — 24hrs (+$2)</div>
+        <div class="rush-switch" id="rush-switch"></div>
+      </div>
+      <div id="cart-totals" style="display:none;">
+        <div class="cart-line subtotal"><span>Subtotal</span><span id="ct-subtotal">$0</span></div>
+        <div class="cart-line discount" id="ct-discount-row" style="display:none;"><span id="ct-discount-label">Bulk discount</span><span id="ct-discount"></span></div>
+        <div class="cart-line rush-line" id="ct-rush-row" style="display:none;"><span>Rush delivery</span><span>+$2</span></div>
+        <div class="cart-line total"><span>Total</span><span id="ct-total">$0</span></div>
+      </div>
+      <button class="btn-place-order" id="btn-checkout" disabled onclick="scrollToForm()">Place Order &darr;</button>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// MODULE STATE
+let selectedMods = new Set();
+
+// Load from sessionStorage if came from homepage
+const savedMods = sessionStorage.getItem('wedockit_mods');
+if (savedMods) {
+  JSON.parse(savedMods).forEach(name => selectedMods.add(name));
+  // Highlight corresponding cards
+  document.querySelectorAll('.mod-card').forEach(card => {
+    const nameEl = card.querySelector('.mod-name');
+    if (nameEl && selectedMods.has(nameEl.textContent.trim())) {
+      card.classList.add('selected');
+    }
+  });
+  updateCounter();
+}
+
+function toggleCat(header) {
+  const grid = header.nextElementSibling;
+  header.classList.toggle('open', grid.classList.toggle('open'));
+}
+
+function toggleMod(card, name) {
+  card.classList.toggle('selected');
+  if (card.classList.contains('selected')) selectedMods.add(name);
+  else selectedMods.delete(name);
+  updateCounter();
+}
+
+function clearMods() {
+  document.querySelectorAll('.mod-card.selected').forEach(c => c.classList.remove('selected'));
+  selectedMods.clear();
+  updateCounter();
+}
+
+function getPrice(n) {
+  if (n <= 10) return 15;
+  if (n <= 20) return 20;
+  if (n <= 30) return 27;
+  return 35;
+}
+
+function updateCounter() {
+  const n = selectedMods.size;
+  const el = document.getElementById('mod-count');
+  el.textContent = n;
+  el.className = 'counter-num' + (n<=10?'': n<=20?' t2': n<=30?' t3':' t4');
+  document.getElementById('mod-price').textContent = '$' + getPrice(n);
+  const tierEl = document.getElementById('mod-tier');
+  const subEl = document.getElementById('mod-sub');
+  if (n===0) { tierEl.textContent='Up to 10 modules'; subEl.textContent='Select modules below'; }
+  else if (n<=10) { tierEl.textContent=n+' of 10 in this tier'; subEl.textContent=n+' module'+(n===1?'':'s')+' selected'; }
+  else if (n<=20) { tierEl.textContent=n+' modules — $20 tier'; subEl.textContent=n+' modules selected'; }
+  else if (n<=30) { tierEl.textContent=n+' modules — $27 tier'; subEl.textContent=n+' modules selected'; }
+  else { tierEl.textContent=n+' modules — $35 tier'; subEl.textContent=n+' modules selected'; }
+}
+
+// CART
+let cart = [], rushOn = false, dockCounter = 0;
+
+function addToCart() {
+  const vibe = document.getElementById('dock-vibe').value.trim();
+  const name = document.getElementById('dock-name').value.trim();
+  const mods = Array.from(selectedMods);
+  if (mods.length === 0) { alert('Please select at least one module before adding to cart.'); return; }
+  dockCounter++;
+  const dock = { id: dockCounter, name: name || ('Dock ' + dockCounter), vibe: vibe || 'Not specified', modules: mods, price: getPrice(mods.length) };
+  cart.push(dock);
+  renderCart();
+  clearMods();
+  document.getElementById('dock-name').value = '';
+  document.getElementById('dock-vibe').value = '';
+  const btn = document.querySelector('.btn-add-cart');
+  btn.textContent = '✓ Added to Cart!';
+  btn.style.background = 'linear-gradient(135deg,#22c55e,#16a34a)';
+  setTimeout(() => { btn.textContent = 'Add to Cart →'; btn.style.background = ''; }, 2000);
+}
+
+function removeFromCart(id) { cart = cart.filter(d => d.id !== id); renderCart(); }
+
+function getDiscount(n) {
+  if (n===1) return 0; if (n===2) return 0.10; if (n===3) return 0.25; if (n===4) return 0.40; return 0.50;
+}
+
+function renderCart() {
+  const itemsEl = document.getElementById('cart-items');
+  const emptyEl = document.getElementById('cart-empty');
+  const totalsEl = document.getElementById('cart-totals');
+  const btn = document.getElementById('btn-checkout');
+  const sub = document.getElementById('cart-sub');
+  const fab = document.getElementById('cart-fab');
+  const fabBadge = document.getElementById('fab-badge');
+  fabBadge.textContent = cart.length;
+  fab.style.display = cart.length > 0 ? 'flex' : 'none';
+  sub.textContent = cart.length === 0 ? 'No Docks added yet' : cart.length + ' Dock' + (cart.length===1?'':'s') + ' in cart';
+  if (cart.length === 0) { emptyEl.style.display='block'; totalsEl.style.display='none'; btn.disabled=true; btn.textContent='Place Order ↓'; return; }
+  emptyEl.style.display = 'none'; totalsEl.style.display = 'block'; btn.disabled = false;
+  document.querySelectorAll('.cart-item').forEach(el => el.remove());
+  let html = '';
+  cart.forEach(dock => {
+    html += `<div class="cart-item"><button class="cart-remove" onclick="removeFromCart(${dock.id})">✕</button><div class="cart-item-header"><div class="cart-item-name">${dock.name}</div><div class="cart-item-price">$${dock.price}</div></div><div class="cart-item-modules">${dock.modules.length} modules selected</div><div class="cart-item-vibe">Theme: ${dock.vibe}</div><div class="cart-item-tags">${dock.modules.slice(0,5).map(m=>`<span class="cart-item-tag">${m}</span>`).join('')}${dock.modules.length>5?`<span class="cart-item-tag">+${dock.modules.length-5} more</span>`:''}</div></div>`;
+  });
+  itemsEl.insertAdjacentHTML('afterbegin', html);
+  const subtotal = cart.reduce((s,d)=>s+d.price,0);
+  const disc = getDiscount(cart.length);
+  const discAmt = subtotal * disc;
+  const total = subtotal - discAmt + (rushOn ? 2 : 0);
+  document.getElementById('ct-subtotal').textContent = '$' + subtotal.toFixed(2);
+  const discRow = document.getElementById('ct-discount-row');
+  if (discAmt > 0) { discRow.style.display='flex'; document.getElementById('ct-discount-label').textContent='Bulk discount ('+Math.round(disc*100)+'% off)'; document.getElementById('ct-discount').textContent='-$'+discAmt.toFixed(2); } else { discRow.style.display='none'; }
+  document.getElementById('ct-rush-row').style.display = rushOn ? 'flex' : 'none';
+  document.getElementById('ct-total').textContent = '$' + total.toFixed(2);
+  btn.textContent = 'Place Order — $' + total.toFixed(2) + ' ↓';
+}
+
+function toggleRush() { rushOn=!rushOn; document.getElementById('rush-switch').classList.toggle('on',rushOn); renderCart(); }
+
+function toggleCart() {
+  const col = document.getElementById('cart-col');
+  const showTab = document.getElementById('cart-show-tab');
+  const btn = document.getElementById('collapse-btn');
+  const isCollapsed = col.classList.toggle('collapsed');
+  showTab.style.display = isCollapsed ? 'block' : 'none';
+  btn.innerHTML = isCollapsed ? '&#8592; Show' : '&#8594; Hide';
+  document.querySelector('.main-col').style.maxWidth = isCollapsed ? '100%' : 'calc(100vw - 320px)';
+}
+
+function scrollToForm() { document.querySelector('.questionnaire').scrollIntoView({behavior:'smooth'}); }
+
+// FORM
+function updateProgress(step) {
+  for (let i=0;i<8;i++) {
+    const d = document.getElementById('dot-'+i);
+    d.className = 'pdot' + (i<step?' done': i===step?' active':'');
+  }
+}
+function nextStep(from) {
+  document.getElementById('step-'+from).classList.remove('active');
+  document.getElementById('step-'+(from+1)).classList.add('active');
+  updateProgress(from+1);
+  if (from+1===6) renderFormSummary();
+}
+function prevStep(from) {
+  document.getElementById('step-'+from).classList.remove('active');
+  document.getElementById('step-'+(from-1)).classList.add('active');
+  updateProgress(from-1);
+}
+function selectOpt(el, group) {
+  el.parentElement.querySelectorAll('.tab-opt').forEach(o=>o.classList.remove('selected'));
+  el.classList.add('selected');
+  const ids = { timeframe:'q-timeframe', tablayout:'q-tablayout' };
+  if (ids[group]) document.getElementById(ids[group]).value = el.querySelector('div div:first-child') ? el.querySelector('div div:first-child').textContent : el.textContent;
+}
+function renderFormSummary() {
+  const el = document.getElementById('cart-summary-form');
+  if (cart.length===0) { el.innerHTML='<div style="font-size:13px;color:var(--text-muted);font-style:italic;">No Docks in cart yet. Add Docks above first.</div>'; return; }
+  const subtotal = cart.reduce((s,d)=>s+d.price,0);
+  const disc = getDiscount(cart.length);
+  const discAmt = subtotal * disc;
+  const total = subtotal - discAmt + (rushOn?2:0);
+  let html = '<div class="csif-title">Order Summary</div>';
+  cart.forEach(d => { html += `<div class="csif-item"><span>${d.name} — ${d.modules.length} modules</span><span>$${d.price}</span></div>`; });
+  if (discAmt>0) html += `<div class="csif-item" style="color:#86efac"><span>Bulk discount (${Math.round(disc*100)}% off)</span><span>-$${discAmt.toFixed(2)}</span></div>`;
+  if (rushOn) html += `<div class="csif-item" style="color:var(--orange)"><span>Rush delivery</span><span>+$2</span></div>`;
+  html += `<div class="csif-total"><span>Total</span><span>$${total.toFixed(2)}</span></div>`;
+  el.innerHTML = html;
+}
+
+function submitForm() {
+  const email = document.getElementById('q-email').value.trim();
+  if (!email || !email.includes('@')) { document.getElementById('q-email').style.borderColor='rgba(244,114,182,0.6)'; document.getElementById('q-email').focus(); return; }
+  const subtotal = cart.reduce((s,d)=>s+d.price,0);
+  const disc = getDiscount(cart.length);
+  const discAmt = subtotal * disc;
+  const total = subtotal - discAmt + (rushOn?2:0);
+  const docksDetail = cart.map((d,i)=>`Dock ${i+1}: ${d.name} | Theme: ${d.vibe} | Modules (${d.modules.length}): ${d.modules.join(', ')} | Price: $${d.price}`).join('\n\n');
+  const data = {
+    name: document.getElementById('q-name').value,
+    business: document.getElementById('q-business').value,
+    platforms: document.getElementById('q-links').value,
+    timeframe: document.getElementById('q-timeframe').value,
+    tab_layout: document.getElementById('q-tablayout').value,
+    socials_and_extra: document.getElementById('q-socials').value + ' | ' + document.getElementById('q-extra').value,
+    email: email,
+    rush: rushOn ? 'Rush — 24hrs (+$2)' : 'Standard — 48hrs',
+    docks_count: cart.length,
+    docks_detail: docksDetail,
+    subtotal: '$' + subtotal.toFixed(2),
+    discount: discAmt > 0 ? '-$' + discAmt.toFixed(2) + ' (' + Math.round(disc*100) + '% bulk discount)' : 'None',
+    total_due: '$' + total.toFixed(2)
+  };
+  fetch('https://formspree.io/f/mlgvkzva', {
+    method:'POST', headers:{'Content-Type':'application/json','Accept':'application/json'},
+    body: JSON.stringify(data)
+  }).then(()=>showSuccess()).catch(()=>showSuccess());
+}
+
+function showSuccess() {
+  for (let i=0;i<8;i++) document.getElementById('step-'+i).classList.remove('active');
+  document.getElementById('progress-dots').style.display='none';
+  document.getElementById('form-success').style.display='block';
+}
+
+// STARS — rare, more toward bottom
+function createStars() {
+  const wrap = document.getElementById('stars-wrap');
+  for (let i=0;i<18;i++) {
+    const s = document.createElement('div');
+    s.className = 'star';
+    const size = [1,1,2,2,3][Math.floor(Math.random()*5)];
+    const yRand = Math.random();
+    const y = yRand < 0.3 ? Math.random()*35 : 35 + Math.random()*65;
+    const x = Math.random()*100;
+    const maxOp = y < 35 ? 0.25+Math.random()*0.25 : 0.45+Math.random()*0.45;
+    const dur = (12+Math.random()*22).toFixed(1)+'s';
+    const delay = -(Math.random()*30).toFixed(1)+'s';
+    s.style.cssText = `width:${size}px;height:${size}px;left:${x}%;top:${y}%;--dur:${dur};--delay:${delay};--mop:${maxOp.toFixed(2)};`;
+    wrap.appendChild(s);
+  }
+}
+createStars();
+</script>
+</body>
+</html>
